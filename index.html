@@ -5,13 +5,687 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>가상 남자친구 문자 시뮬레이터 — 테마 상점/포인트/공유</title>
 <style>
-/* 여기에 이전에 작성한 전체 CSS 코드 삽입 */
+  /* ====== 공통 토큰 ====== */
+  :root{
+    --bg:#0f1115; --panel:#151922; --muted:#8a93a6; --text:#e7ecf7; --accent:#7aa2ff;
+    --border:#242a36; --shadow:0 10px 30px rgba(0,0,0,.35);
+    --bubble-me:#0a84ff; --bubble-him:#2a2f3a; --header:#0b0e13; --send:#0a84ff; --radius:18px; --font:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Malgun Gothic,Helvetica,Arial;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#0b0e13,#0f1115 40%);color:var(--text);font:15px/1.45 var(--font)}
+  .wrap{max-width:1060px;margin:20px auto;padding:14px}
+  header{display:flex;gap:10px;align-items:center;margin-bottom:14px}
+  header h1{font-size:18px;margin:0}
+  .chip{border:1px solid var(--border);border-radius:999px;padding:6px 10px;color:var(--muted)}
+  .nav{display:flex;gap:8px;flex-wrap:wrap;margin-left:auto}
+  .tab{border:1px solid var(--border);background:transparent;color:var(--text);padding:8px 12px;border-radius:999px;cursor:pointer}
+  .tab.active{border-color:var(--accent);background:#0d1220}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow)}
+  .grid{display:grid;gap:14px}
+  .grid.col2{grid-template-columns:1fr 1fr}
+  .grid.col3{grid-template-columns:repeat(3,1fr)}
+  .grid.col4{grid-template-columns:repeat(4,1fr)}
+  @media(max-width:980px){.grid.col3,.grid.col4{grid-template-columns:1fr 1fr}}
+  @media(max-width:680px){.grid.col2{grid-template-columns:1fr}}
+  label{display:block;margin:8px 2px 6px;color:var(--muted);font-size:12px}
+  input[type="text"],input[type="number"],textarea,select{
+    width:100%;background:#0c0f16;border:1px solid var(--border);color:var(--text);padding:12px;border-radius:12px;outline:none
+  }
+  textarea{min-height:88px;resize:vertical}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .btn{appearance:none;border:0;border-radius:12px;padding:10px 14px;color:#fff;cursor:pointer;font-weight:700}
+  .btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+  .btn.primary{background:var(--accent)}
+  .btn.success{background:#44d07d}
+  .btn.warn{background:#f7b500;color:#111}
+  .btn.danger{background:#ff4d4f}
+  .right{margin-left:auto}
+  .hint{font-size:12px;color:var(--muted)}
+  .pill{padding:6px 10px;border:1px dashed var(--border);border-radius:999px;color:var(--muted);font-size:12px}
+  .progress{height:6px;background:#0c0f16;border:1px solid var(--border);border-radius:999px;overflow:hidden}
+  .progress>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),#5dd3ff);width:0%}
+  .tagger{display:flex;gap:8px;flex-wrap:wrap}
+  .tag{padding:8px 12px;border:1px solid var(--border);border-radius:999px;cursor:pointer;color:#cdd6ee}
+  .tag.active{border-color:var(--accent);background:#0f1a2e}
+  .hidden{display:none}
+
+  /* ====== Chat Phone (테마 적용 영역) ====== */
+  .phone{width:390px;max-width:100%;margin:0 auto;border-radius:34px;border:1px solid #222;background:var(--bg);box-shadow:0 15px 50px rgba(0,0,0,.6);overflow:hidden}
+  .notch{height:30px;background:linear-gradient(#0a0a0a,#111);border-bottom:1px solid #191919}
+  .chat-header{padding:10px 14px;border-bottom:1px solid #1c1f28;display:flex;gap:10px;align-items:center;background:var(--header);position:sticky;top:0}
+  .avatar{width:30px;height:30px;border-radius:50%;overflow:hidden;border:1px solid #222;background:#222;display:grid;place-items:center}
+  .chat-title{font-weight:800}
+  .chat-sub{font-size:12px;color:var(--muted)}
+  .chat{height:520px;display:flex;flex-direction:column}
+  .msgs{flex:1;overflow:auto;background:linear-gradient(180deg,#0b0f15,#0b0f15),#0b0f15;padding:12px;scroll-behavior:smooth}
+  .msg-row{display:flex;margin:6px 0}
+  .msg{max-width:75%;padding:10px 12px;border-radius:var(--radius);position:relative;white-space:pre-wrap;word-break:break-word}
+  .me{justify-content:flex-end}
+  .me .msg{background:var(--bubble-me);color:#fff;border-bottom-right-radius:6px}
+  .him .msg{background:var(--bubble-him);color:#e6ecff;border-bottom-left-radius:6px}
+  .time{font-size:11px;color:var(--muted);margin:2px 6px}
+  .composer{display:flex;gap:8px;align-items:center;padding:10px;border-top:1px solid #1c1f28;background:var(--header)}
+  .composer input{flex:1;border-radius:20px;padding:12px 14px;background:#0d121a;border:1px solid #1c2030;color:var(--text)}
+  .composer .send{background:var(--send);border-radius:50%;width:40px;height:40px;display:grid;place-items:center;color:#fff;font-weight:900}
+  canvas#avatar{border-radius:16px;border:1px solid var(--border)}
+  /* ====== Store ====== */
+  .store-grid{display:grid;gap:12px;grid-template-columns:repeat(5,1fr)}
+  @media(max-width:1100px){.store-grid{grid-template-columns:repeat(4,1fr)}}
+  @media(max-width:880px){.store-grid{grid-template-columns:repeat(3,1fr)}}
+  @media(max-width:680px){.store-grid{grid-template-columns:repeat(2,1fr)}}
+  .theme-card{background:var(--panel);border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+  .theme-prev{height:120px;position:relative;padding:10px;display:grid;place-items:center}
+  .bubble-demo{display:flex;gap:6px;align-items:flex-end}
+  .bd{padding:8px 10px;border-radius:14px;font-size:12px}
+  .theme-meta{padding:10px;border-top:1px solid var(--border);display:grid;gap:6px}
+  .price{font-weight:800}
+  .owned{color:#44d07d;font-weight:700}
+  /* ====== Light global toggle ====== */
+  .light{
+    --bg:#f6f8fc; --panel:#ffffff; --text:#101218; --muted:#596174; --border:#e7ecf4;
+    --bubble-him:#eef1f8; --header:#f7f8fc;
+  }
 </style>
 </head>
 <body>
-<!-- 여기에 이전에 작성한 전체 HTML 바디 코드 삽입 -->
+  <div class="wrap">
+    <header>
+      <span class="chip">Store & Themes</span>
+      <h1>가상 ‘남자친구’ 문자 시뮬레이터</h1>
+      <div class="nav">
+        <button class="tab active" data-view="setup">설정</button>
+        <button class="tab" data-view="image">이미지</button>
+        <button class="tab" data-view="chat">채팅</button>
+        <button class="tab" data-view="store">상점</button>
+        <button class="tab" data-view="custom">커스텀 제작</button>
+        <button class="tab" data-view="share">공유</button>
+        <button class="tab" id="toggleTheme">라이트/다크</button>
+      </div>
+    </header>
+
+    <div class="row" style="margin-bottom:10px">
+      <div class="pill">포인트: <b id="points">0</b> P</div>
+      <div class="pill">누적 대화 수: <b id="msgCount">0</b></div>
+      <div class="pill">활성 테마: <b id="activeThemeName">기본</b></div>
+      <div class="right"><button class="btn ghost" id="resetAll">모두 초기화</button></div>
+    </div>
+
+    <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+
+    <!-- ====== VIEW: 설정 ====== -->
+    <section id="view-setup" class="card" style="padding:16px">
+      <div class="grid">
+        <h2 style="margin:0">내 정보</h2>
+        <div class="grid col2">
+          <div>
+            <label for="meName">내 닉네임</label>
+            <input id="meName" type="text" placeholder="예: 은별" />
+          </div>
+          <div>
+            <label for="meAge">나이</label>
+            <input id="meAge" type="number" min="10" max="99" placeholder="예: 25" />
+          </div>
+        </div>
+        <div>
+          <label>관계 컨셉(복수 선택)</label>
+          <div class="tagger" id="concepts"></div>
+          <div class="hint">예: 썸, 오래된 연인, 장거리, 비밀연애, 직장동료, 캠퍼스, 첫사랑, 재회…</div>
+        </div>
+        <h2 style="margin:8px 0 0">남자친구 설정</h2>
+        <div class="grid col2">
+          <div>
+            <label for="bfName">이름</label>
+            <input id="bfName" type="text" placeholder="예: 민준" />
+          </div>
+          <div>
+            <label for="bfAge">나이</label>
+            <input id="bfAge" type="number" min="10" max="99" placeholder="예: 27" />
+          </div>
+        </div>
+        <div class="grid col2">
+          <div>
+            <label>성격(복수 선택)</label>
+            <div class="tagger" id="traits"></div>
+          </div>
+          <div>
+            <label for="tone">말투</label>
+            <select id="tone">
+              <option value="다정한">다정한</option><option value="츤데레">츤데레</option>
+              <option value="능청스러운">능청스러운</option><option value="차분한">차분한</option>
+              <option value="장난꾸러기">장난꾸러기</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid col2">
+          <div>
+            <label for="hobbies">취미(쉼표 구분)</label>
+            <input id="hobbies" type="text" placeholder="커피, 러닝, 게임" />
+          </div>
+          <div>
+            <label for="bio">간단 소개</label>
+            <input id="bio" type="text" placeholder="예: 새벽 러닝하는 개발자" />
+          </div>
+        </div>
+        <div class="row">
+          <div class="right">
+            <button class="btn primary" data-view-jump="image">다음: 이미지</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== VIEW: 이미지 ====== -->
+    <section id="view-image" class="card hidden" style="padding:16px">
+      <h2 style="margin:0 0 10px">외모 설정 & 아바타 생성</h2>
+      <div class="grid col2">
+        <div class="grid">
+          <div class="grid col2">
+            <div>
+              <label for="styleHair">헤어스타일</label>
+              <select id="styleHair"><option>숏컷</option><option>투블럭</option><option>장발</option><option>웨이브</option><option>포마드</option><option>댄디</option></select>
+            </div>
+            <div>
+              <label for="styleVibe">분위기</label>
+              <select id="styleVibe"><option>따뜻함</option><option>시크</option><option>청량</option><option>도도</option><option>부드러움</option><option>스포티</option></select>
+            </div>
+          </div>
+          <div class="grid col2">
+            <div>
+              <label for="height">키(cm)</label>
+              <input id="height" type="number" min="150" max="210" placeholder="178" />
+            </div>
+            <div>
+              <label for="build">체형</label>
+              <select id="build"><option>슬림</option><option>균형</option><option>근육형</option><option>탄탄</option></select>
+            </div>
+          </div>
+          <div>
+            <label for="prompt">이미지 프롬프트(선택)</label>
+            <textarea id="prompt" placeholder="자연광, 미소, 흰 셔츠, 상반신"></textarea>
+            <div class="hint">※ 기본은 로컬 아바타 생성기. 실제 이미지 API는 우측 ‘API 연결’ 참조.</div>
+          </div>
+          <div class="row">
+            <button class="btn warn" id="gen">이미지 생성</button>
+            <button class="btn ghost" id="apiHelp">API 연결</button>
+            <div class="pill" id="genStatus">대기 중…</div>
+            <div class="right"><button class="btn primary" data-view-jump="chat">채팅 시작</button></div>
+          </div>
+        </div>
+        <div class="grid">
+          <canvas id="avatar" width="360" height="360"></canvas>
+          <div class="row"><div class="avatar"><img id="avatarMini" alt="아바타"/></div><span class="hint">채팅 상단 프로필로 사용됩니다.</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== VIEW: 채팅 ====== -->
+    <section id="view-chat" class="hidden">
+      <div class="grid col2">
+        <div class="card" style="padding:12px">
+          <h2 style="margin:6px 8px">채팅</h2>
+          <div class="phone" role="region" aria-label="문자 대화">
+            <div class="notch"></div>
+            <div class="chat">
+              <div class="chat-header">
+                <div class="avatar"><img id="chatAvatar" alt="프로필"/></div>
+                <div>
+                  <div class="chat-title" id="chatTitle">민준</div>
+                  <div class="chat-sub" id="chatSub">메시지</div>
+                </div>
+                <div class="right">
+                  <button class="btn ghost" id="newScenario">대화 초기화</button>
+                </div>
+              </div>
+              <div class="msgs" id="msgs" aria-live="polite"></div>
+              <div class="composer">
+                <input id="inputMsg" type="text" placeholder="메시지…" autocomplete="off" />
+                <button class="send" id="sendBtn" aria-label="보내기">➤</button>
+              </div>
+            </div>
+          </div>
+          <div class="hint" style="margin-top:10px">※ 100메시지마다 10포인트 획득. 테마는 상점에서 3500P에 구매 가능합니다.</div>
+        </div>
+        <div class="card" style="padding:12px">
+          <h3 style="margin:6px 8px">세션 요약 / 장기 기억</h3>
+          <div id="summary" class="grid"></div>
+          <div class="space"></div>
+          <div class="pill">기억 키워드: <span id="memkeys"></span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== VIEW: 상점 ====== -->
+    <section id="view-store" class="card hidden" style="padding:16px">
+      <div class="row" style="margin-bottom:8px">
+        <h2 style="margin:0">테마 상점</h2>
+        <div class="right hint">미리보기 클릭 → 구매 또는 적용</div>
+      </div>
+      <div id="storeGrid" class="store-grid"></div>
+    </section>
+
+    <!-- ====== VIEW: 커스텀 제작 ====== -->
+    <section id="view-custom" class="card hidden" style="padding:16px">
+      <div class="grid col2">
+        <div class="grid">
+          <h2 style="margin:0">커스텀 테마 제작</h2>
+          <div class="grid col2">
+            <div><label>나(파랑) 말풍선</label><input id="ct_me" type="text" value="#0a84ff"></div>
+            <div><label>상대(회색) 말풍선</label><input id="ct_him" type="text" value="#2a2f3a"></div>
+            <div><label>헤더 배경</label><input id="ct_header" type="text" value="#0b0e13"></div>
+            <div><label>보내기 버튼</label><input id="ct_send" type="text" value="#0a84ff"></div>
+            <div><label>반경(px)</label><input id="ct_radius" type="number" value="18"></div>
+            <div><label>폰트패밀리</label><input id="ct_font" type="text" value="system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Malgun Gothic"></div>
+          </div>
+          <div class="row">
+            <input id="ct_name" type="text" placeholder="테마 이름 (예: MyMint)" />
+            <button class="btn success" id="ct_save">커스텀 테마 저장</button>
+            <button class="btn ghost" id="ct_apply">미리보기 적용</button>
+          </div>
+          <div class="row">
+            <input id="ct_prompt" type="text" placeholder="AI 도움받아 색 조합 만들 프롬프트(선택)" />
+            <button class="btn warn" id="ct_ai">AI로 자동 색 추천(오프라인 난수)</button>
+            <span class="hint">※ 실제 AI API는 서버 연결 필요. 지금은 프롬프트 → 안정적 난수 팔레트.</span>
+          </div>
+        </div>
+        <div class="grid">
+          <h3 style="margin:0">미리보기</h3>
+          <div class="phone">
+            <div class="notch"></div>
+            <div class="chat">
+              <div class="chat-header"><div class="avatar"></div><div><div class="chat-title">프리뷰</div><div class="chat-sub">미리보기</div></div></div>
+              <div class="msgs" style="padding:12px">
+                <div class="msg-row him"><div class="msg">안녕! 커스텀 테마 어때?</div></div>
+                <div class="msg-row me"><div class="msg">오 괜찮네. 색감 맘에 들어.</div></div>
+              </div>
+              <div class="composer"><input placeholder="메시지…"><button class="send">➤</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:8px">저장된 커스텀 테마는 상점 하단의 “내 커스텀” 섹션에 나타납니다(무료 적용).</div>
+    </section>
+
+    <!-- ====== VIEW: 공유 ====== -->
+    <section id="view-share" class="card hidden" style="padding:16px">
+      <div class="grid col2">
+        <div class="grid">
+          <h2 style="margin:0">내 남자친구 프리셋 내보내기</h2>
+          <textarea id="exportBox" readonly></textarea>
+          <div class="row">
+            <button class="btn primary" id="doExport">JSON 내보내기</button>
+            <button class="btn ghost" id="copyExport">복사</button>
+          </div>
+          <div class="hint">이 JSON을 공유하면 다른 사람이 상단 “가져오기”로 똑같은 남자친구를 불러올 수 있어요.</div>
+        </div>
+        <div class="grid">
+          <h2 style="margin:0">가져오기</h2>
+          <textarea id="importBox" placeholder='여기에 JSON 붙여넣기'></textarea>
+          <div class="row">
+            <button class="btn success" id="doImport">가져오기 적용</button>
+          </div>
+          <div class="hint">가져오면 설정·외모·성격·기억 요약까지 복원됩니다(대화 로그는 선택).</div>
+          <div class="row"><label><input type="checkbox" id="importChat"> 대화 로그도 포함</label></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
 <script>
-// 여기에 이전에 작성한 전체 JavaScript 코드 삽입
+/* ================== 상태 & 저장 ================== */
+const $ = s=>document.querySelector(s);
+const $$ = s=>Array.from(document.querySelectorAll(s));
+const state = JSON.parse(localStorage.getItem('gbf_state_v2')||'{}');
+const save = ()=>localStorage.setItem('gbf_state_v2', JSON.stringify(state));
+const updateHeader = ()=>{
+  $('#points').textContent = state.points|0;
+  $('#msgCount').textContent = state.msgCount|0;
+  const t = (state.themes && state.themes.active) ? themeName(state.themes.active) : '기본';
+  $('#activeThemeName').textContent = t;
+};
+if(!state.themes){ state.themes={owned:['base'],active:'base',custom:[]}; }
+if(state.points==null) state.points=0;
+if(state.msgCount==null) state.msgCount=0;
+if(!state.memory){ state.memory={keys:[],facts:{},summary:''}; }
+updateHeader();
+
+/* ================== 네비게이션 ================== */
+function switchView(id){
+  ['setup','image','chat','store','custom','share'].forEach(v=>{
+    $('#view-'+v).classList.toggle('hidden', v!==id);
+    $$('.tab').forEach(b=> b.classList.toggle('active', b.dataset.view===id));
+  });
+  if(id==='store') renderStore();
+  if(id==='share') $('#exportBox').value='';
+}
+$$('.tab').forEach(b=> b.onclick=()=>switchView(b.dataset.view));
+$$('[data-view-jump]').forEach(b=> b.onclick=()=>switchView(b.dataset.viewJump));
+$('#resetAll').onclick=()=>{ if(confirm('모든 데이터를 초기화할까요?')){ localStorage.removeItem('gbf_state_v2'); location.reload(); } };
+$('#toggleTheme').onclick=()=>{ document.body.classList.toggle('light'); };
+
+/* ================== 태그 섹션 ================== */
+const conceptsList = ['썸','오래된 연인','장거리','비밀연애','직장동료','캠퍼스','첫사랑','재회','슬로번','알콩달콩','티키타카'];
+const traitsList   = ['다정함','유머러스','차분함','리더형','배려심','솔직함','낭만적','애교있음','과묵함','사려깊음','장난꾸러기'];
+function chips(root, items, key){
+  root.innerHTML='';
+  const sel = new Set(state[key]||[]);
+  items.forEach(t=>{
+    const b=document.createElement('button');
+    b.type='button'; b.className='tag'+(sel.has(t)?' active':''); b.textContent=t;
+    b.onclick=()=>{ sel.has(t)?sel.delete(t):sel.add(t); b.classList.toggle('active'); state[key]=[...sel]; save(); };
+    root.appendChild(b);
+  });
+}
+chips($('#concepts'), conceptsList, 'concepts');
+chips($('#traits'), traitsList, 'traits');
+
+/* ================== 입력 바인딩 ================== */
+['meName','meAge','bfName','bfAge','hobbies','bio','styleHair','styleVibe','height','build','tone','prompt']
+.forEach(id=>{
+  const el = $('#'+id);
+  if(state[id]) el.value = state[id];
+  el && (el.oninput = e=>{ state[id]= e.target.value; save(); });
+});
+const setProgress = pct=> $('#bar').style.width=pct+'%';
+setProgress(0);
+
+/* ================== 로컬 아바타 생성 ================== */
+function prng(seed){ let x = Math.abs(seed|0)||1234567; return ()=> (x = (x*1664525 + 1013904223)>>>0) / 2**32; }
+function hash(s){let h=0; for(let i=0;i<s.length;i++) h=(h*31 + s.charCodeAt(i))|0; return h;}
+function genAvatarCanvas(name,vibe,hair){
+  const c=$('#avatar'), ctx=c.getContext('2d'), r=prng(hash(name+vibe+hair));
+  const g=ctx.createLinearGradient(0,0,c.width,c.height);
+  const baseH = Math.floor(r()*360);
+  g.addColorStop(0, `hsl(${baseH},70%,${document.body.classList.contains('light')?80:35}%)`);
+  g.addColorStop(1, `hsl(${(baseH+45)%360},70%,${document.body.classList.contains('light')?70:22}%)`);
+  ctx.fillStyle=g; ctx.fillRect(0,0,c.width,c.height);
+  for(let i=0;i<3;i++){ ctx.beginPath(); ctx.arc(180,170,120 - i*18, 0, Math.PI*2);
+    ctx.strokeStyle=`hsla(${(baseH+i*15)%360},70%,65%,.25)`; ctx.lineWidth=8; ctx.stroke(); }
+  const skin = `hsl(${30+ r()*10}, 40%, ${document.body.classList.contains('light')?80:74}%)`;
+  ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(180,170,70,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = `hsl(${baseH}, 25%, ${document.body.classList.contains('light')?20:10}%)`;
+  ctx.beginPath(); const hOff = (hair||'').includes('장발')?40: (hair||'').includes('웨이브')?20:0;
+  ctx.ellipse(180,130,90,60+hOff,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle = document.body.classList.contains('light')?'#111':'#fff';
+  ctx.fillRect(150,165,12,4); ctx.fillRect(198,165,12,4);
+  ctx.fillStyle = document.body.classList.contains('light')?'#222':'#ddd';
+  ctx.fillRect(170,190,20,4);
+  ctx.fillStyle='rgba(0,0,0,.25)'; ctx.fillRect(0,c.height-48,c.width,48);
+  ctx.fillStyle='#fff'; ctx.font='bold 16px var(--font)'; ctx.fillText(`${hair} · ${vibe}`, 14, c.height-16);
+  const data = c.toDataURL('image/png'); $('#avatarMini').src=data; $('#chatAvatar').src=data; state.avatarData=data; save();
+}
+$('#gen').onclick=()=>{ genAvatarCanvas(state.bfName||'남친', state.styleVibe||'따뜻함', state.styleHair||'숏컷'); $('#genStatus').textContent='생성 완료'; setTimeout(()=>$('#genStatus').textContent='대기 중…',1500); };
+$('#apiHelp').onclick=()=>alert(`실제 이미지 생성 API 연결:
+POST /api/generate → { hair, vibe, prompt, bfName } → { image: base64 }
+받은 이미지를 state.avatarData에 저장 후 미리보기 반영하면 됩니다.`);
+
+/* ================== 채팅 / 장기 기억 ================== */
+const msgsEl = $('#msgs');
+function addMsg(text, who='him', ts=Date.now()){
+  const row=document.createElement('div'); row.className='msg-row '+(who==='me'?'me':'him');
+  const b=document.createElement('div'); b.className='msg'; b.textContent=text;
+  row.appendChild(b); msgsEl.appendChild(row);
+  const t=document.createElement('div'); t.className='time '+(who==='me'?'right':''); t.textContent=new Date(ts).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'});
+  msgsEl.appendChild(t);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  state.chat = state.chat||[]; state.chat.push({who,text,ts}); save();
+  // 포인트 계산(100메시지마다 10P)
+  state.msgCount = (state.msgCount||0)+1; if(state.msgCount%100===0){ state.points=(state.points||0)+10; toast('+10P 획득! (누적 '+state.msgCount+' 메시지)'); }
+  save(); updateHeader();
+  // 메모리 갱신
+  remember(text, who);
+}
+function buildChatHeader(){
+  $('#chatTitle').textContent = state.bfName||'남친';
+  $('#chatSub').textContent   = state.bio||'메시지';
+  if(state.avatarData) $('#chatAvatar').src = state.avatarData;
+}
+function buildSummary(){
+  const s=$('#summary'); s.innerHTML='';
+  const row=(k,v)=>{ const d=document.createElement('div'); d.innerHTML=`<label style="color:var(--muted);font-size:12px">${k}</label><div>${v||'-'}</div>`; s.appendChild(d); };
+  row('내 닉네임', state.meName); row('내 나이', state.meAge);
+  row('컨셉', (state.concepts||[]).join(', '));
+  row('남친 이름', state.bfName); row('남친 나이', state.bfAge);
+  row('성격', (state.traits||[]).join(', ')); row('말투', state.tone);
+  row('취미', state.hobbies); row('소개', state.bio);
+  row('외모', `${state.styleHair||'-'} / ${state.styleVibe||'-'} / ${state.height||'-'}cm / ${state.build||'-'}`);
+  $('#memkeys').textContent = (state.memory.keys||[]).slice(-12).join(', ');
+}
+function seedIntro(){
+  msgsEl.innerHTML='';
+  addMsg(`안녕 ${state.meName||''}. ${state.bfName||'나야'}.`);
+  setTimeout(()=>addMsg((state.concepts||[]).length?`우리 컨셉은 "${state.concepts.join(', ')}" 맞지?`:'오늘 뭐 하고 싶어?'), 400);
+}
+function sendMsg(){
+  const v = $('#inputMsg').value.trim(); if(!v) return;
+  addMsg(v,'me'); $('#inputMsg').value='';
+  setTimeout(()=> addMsg(personalityReply(v),'him'), 450 + Math.random()*600);
+}
+$('#sendBtn').onclick=sendMsg;
+$('#inputMsg').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); sendMsg(); }});
+$('#newScenario').onclick=()=>{ if(confirm('대화만 초기화(기억 유지)할까요?')){ state.chat=[]; save(); seedIntro(); } };
+
+function personalityReply(userText){
+  const name = state.meName||'너', tone = state.tone||'다정한', traits = new Set(state.traits||[]);
+  const hobbies = (state.hobbies||'').split(',').map(s=>s.trim()).filter(Boolean);
+  const t = userText.toLowerCase();
+  // 장기 기억 사용: 최근 키워드 매칭시 연속성 부여
+  const mem = state.memory||{keys:[],facts:{},summary:''};
+  let hook = '';
+  for(const k of (mem.keys||[]).slice(-8)){
+    if(t.includes(k.toLowerCase())){ hook = `아, 지난번에 얘기한 ${k} 말이지. `; break; }
+  }
+  let opener = tone.includes('다정')?`${name}, `: tone.includes('능청')?'ㅋㅋ ': '';
+  let core='';
+  if(/(밥|식사|먹)/.test(t)) core = traits.has('배려심') ? '밥 챙겨 먹었어? 같이 먹자.' : '배고프면 바로 말해. 뭐 시킬까?';
+  else if(/(힘들|피곤|스트레스|짜증)/.test(t)) core = traits.has('사려깊음') ? '오늘 고생 많았다. 네 편인 거 알지.' : '오늘 하드코어였네. 토닥.';
+  else if(/(보고|그립|보고싶)/.test(t)) core = traits.has('낭만적') ? '지금도 보고 있어. 마음으로.' : '얼른 보자. 시간 맞춰볼까?';
+  else if(/(주말|시간|언제)/.test(t)) core = '주말 오전 어때? 네 일정 우선으로 맞출게.';
+  else if(/(사진|셀카|보여)/.test(t)) core = '방금 찍었는데 부끄럽네 ㅋㅋ 나중에 보내줄게.';
+  else core = traits.has('유머러스') ? '그 얘기 디테일 풀어봐 ㅋㅋ' : '응, 듣고 있어.';
+  if(hobbies.length && /(뭐해|뭐하)/.test(t)) core = `지금 ${hobbies[Math.floor(Math.random()*hobbies.length)]} 중이었어. 너 생각나서 멈춤.`;
+  let ender = tone.includes('츤데레')?' ...괜히 말해봤다.': tone.includes('차분')?' 응. 천천히 하자.': tone.includes('장난')?' (농담 반 진심 반)':'';
+  if(traits.has('낭만적') && Math.random()<.3) ender += ' 네가 좋아서 그래.';
+  // 기억된 사실 우선 답변
+  if(mem.facts.favorite_food && /(뭐 먹|메뉴)/.test(t)) core = `저번에 ${mem.facts.favorite_food} 좋아한다 했잖아. 그걸로 갈까?`;
+  return (opener + hook + core + ender).trim();
+}
+
+/* ====== 기억(간단 키워드/사실 추출 & 요약) ====== */
+function remember(text, who){
+  state.memory = state.memory||{keys:[],facts:{},summary:''};
+  const mem = state.memory;
+  // 키워드(간단한 토크나이저)
+  const words = text.replace(/[^\p{Letter}\p{Number}\s]/gu,' ').split(/\s+/).map(w=>w.trim()).filter(w=>w.length>=2 && w.length<=10);
+  // 자주 나오는 후보만 축적
+  for(const w of words){ if(!['그리고','하지만','오늘','그냥','지금','우리','너무'].includes(w)) mem.keys.push(w); }
+  // 간단 사실 규칙
+  const low = text.toLowerCase();
+  if(who==='me'){
+    if(/좋아하는.*(음식|메뉴)|최애.*(음식|메뉴)/.test(low) || /(치킨|피자|라면|초밥|파스타)/.test(low)){
+      const m = text.match(/(치킨|피자|라면|초밥|파스타|떡볶이|마라탕|비빔밥|햄버거|샐러드)/);
+      if(m) mem.facts.favorite_food = m[1];
+    }
+    const loc = text.match(/(강남|홍대|부산|제주|대구|대전|광주|신촌|잠실|수원|인천)/);
+    if(loc) mem.facts.place = loc[1];
+  }
+  // 요약(최근 12줄 압축)
+  const recent = (state.chat||[]).slice(-12).map(m=> (m.who==='me'?'나: ':'그: ')+m.text);
+  mem.summary = recent.join(' / ');
+  save(); buildSummary();
+}
+
+/* ================== 상점 & 테마 시스템 ================== */
+/* 10종 오마주 테마 (이름만 창작) */
+const THEMES = [
+  {id:'base', name:'기본', price:0, vars:{bubbleMe:'#0a84ff',bubbleHim:'#2a2f3a',header:'#0b0e13',send:'#0a84ff',radius:18,font:''}},
+  {id:'bluebubble',  name:'BlueBubble',  price:3500, vars:{bubbleMe:'#0a84ff',bubbleHim:'#3a3f4a',header:'#0b0e13',send:'#0a84ff',radius:18,font:''}},
+  {id:'kakaoish',    name:'Kakao-ish',   price:3500, vars:{bubbleMe:'#fee500',bubbleHim:'#f0f0f0',header:'#ffffff',send:'#181600',radius:20,font:''}},
+  {id:'droidsms',    name:'Droid SMS',   price:3500, vars:{bubbleMe:'#36d05f',bubbleHim:'#e6f0e8',header:'#0b1a12',send:'#36d05f',radius:14,font:''}},
+  {id:'mintmsg',     name:'MintMessenger',price:3500,vars:{bubbleMe:'#21c7b8',bubbleHim:'#e6f9f6',header:'#052220',send:'#21c7b8',radius:16,font:''}},
+  {id:'violetdm',    name:'Violet DM',   price:3500, vars:{bubbleMe:'#7c4dff',bubbleHim:'#2f2a3a',header:'#1b1630',send:'#7c4dff',radius:18,font:''}},
+  {id:'neonchat',    name:'NeonChat',    price:3500, vars:{bubbleMe:'#00e5ff',bubbleHim:'#11131a',header:'#05070e',send:'#00e5ff',radius:22,font:''}},
+  {id:'minimal',     name:'Minimal Light',price:3500,vars:{bubbleMe:'#111111',bubbleHim:'#f1f5fb',header:'#ffffff',send:'#111111',radius:14,font:''}},
+  {id:'midnight',    name:'Midnight OLED',price:3500,vars:{bubbleMe:'#4a7cff',bubbleHim:'#121212',header:'#000000',send:'#4a7cff',radius:18,font:''}},
+  {id:'papersms',    name:'Paper SMS',   price:3500, vars:{bubbleMe:'#2b2b2b',bubbleHim:'#ffffff',header:'#f9fafb',send:'#111111',radius:10,font:''}},
+  {id:'glassdm',     name:'Glass DM',    price:3500, vars:{bubbleMe:'#82b1ff',bubbleHim:'rgba(255,255,255,.18)',header:'rgba(255,255,255,.08)',send:'#82b1ff',radius:18,font:''}},
+];
+function themeName(id){ return (THEMES.find(t=>t.id===id)||{}).name || id; }
+
+function applyThemeVars(vars){
+  if(!vars) return;
+  document.documentElement.style.setProperty('--bubble-me', vars.bubbleMe);
+  document.documentElement.style.setProperty('--bubble-him', vars.bubbleHim);
+  document.documentElement.style.setProperty('--header', vars.header);
+  document.documentElement.style.setProperty('--send', vars.send);
+  document.documentElement.style.setProperty('--radius', (vars.radius||18)+'px');
+  if(vars.font) document.documentElement.style.setProperty('--font', vars.font);
+}
+function setActiveTheme(id){
+  const base = THEMES.find(t=>t.id===id) || (state.themes.custom||[]).find(t=>t.id===id);
+  if(!base) return;
+  state.themes.active = id; save(); updateHeader(); applyThemeVars(base.vars); toast('테마 적용: '+(base.name||id));
+}
+applyThemeVars( (THEMES.find(t=>t.id===state.themes.active)||{}).vars || THEMES[0].vars );
+
+function renderStore(){
+  const grid = $('#storeGrid'); grid.innerHTML='';
+  const owned = new Set(state.themes.owned||['base']);
+  const makeCard = (theme, custom=false)=>{
+    const card = document.createElement('div'); card.className='theme-card';
+    const prev = document.createElement('div'); prev.className='theme-prev';
+    // 미리보기 풍선
+    const m=theme.vars.bubbleMe, h=theme.vars.bubbleHim, r=theme.vars.radius||18;
+    prev.innerHTML = `<div class="bubble-demo">
+      <div class="bd" style="background:${h};color:${contrastColor(h)};border-radius:${r}px">안녕!</div>
+      <div class="bd" style="background:${m};color:${contrastColor(m)};border-radius:${r}px">응~</div>
+    </div>`;
+    const meta=document.createElement('div'); meta.className='theme-meta';
+    meta.innerHTML = `<div><b>${custom?'[Custom] ':''}${theme.name}</b></div>
+      <div class="row"><span class="price">${theme.price?theme.price.toLocaleString()+' P':'무료'}</span>
+      <span class="right ${owned.has(theme.id)?'owned':''}">${owned.has(theme.id)?'보유중':''}</span></div>
+      <div class="row">
+        <button class="btn ghost" data-prev="${theme.id}">미리보기</button>
+        ${ owned.has(theme.id)
+            ? `<button class="btn primary" data-equip="${theme.id}">적용</button>`
+            : `<button class="btn primary" data-buy="${theme.id}">구매</button>`}
+      </div>`;
+    card.appendChild(prev); card.appendChild(meta); grid.appendChild(card);
+  };
+  THEMES.forEach(t=> makeCard(t,false));
+  // 커스텀
+  const myCustom = state.themes.custom||[];
+  if(myCustom.length){
+    const sep=document.createElement('div'); sep.style.gridColumn='1/-1'; sep.className='hint';
+    sep.textContent='— 내 커스텀 —'; grid.appendChild(sep);
+    myCustom.forEach(t=> makeCard(t,true));
+  }
+  // 이벤트
+  grid.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.buy; const theme = THEMES.find(t=>t.id===id); if(!theme) return;
+    if((state.points||0) < theme.price) { toast('포인트 부족!'); return; }
+    state.points -= theme.price; state.themes.owned.push(id); save(); updateHeader(); renderStore(); toast(`${theme.name} 구매 완료!`);
+  });
+  grid.querySelectorAll('[data-equip]').forEach(b=>b.onclick=()=>{ setActiveTheme(b.dataset.equip); });
+  grid.querySelectorAll('[data-prev]').forEach(b=>b.onclick=()=>{
+    const id=b.dataset.prev;
+    const t = THEMES.find(x=>x.id===id) || (state.themes.custom||[]).find(x=>x.id===id);
+    if(t){ applyThemeVars(t.vars); toast('미리보기 적용 중'); }
+  });
+}
+function contrastColor(bg){
+  // 간단 대비색 계산 (hex 또는 rgba 지원)
+  const c = toRGB(bg); const yiq = ((c.r*299)+(c.g*587)+(c.b*114))/1000; return (yiq>=128)?'#111':'#fff';
+}
+function toRGB(col){
+  if(col.startsWith('#')){
+    const n=parseInt(col.slice(1),16);
+    return {r:(n>>16)&255,g:(n>>8)&255,b:n&255};
+  } else if(col.startsWith('rgba')||col.startsWith('rgb')){
+    const m=col.match(/rgba?\(([\d\.]+),\s*([\d\.]+),\s*([\d\.]+)/); return {r:+m[1],g:+m[2],b:+m[3]};
+  } else { return {r:40,g:40,b:40}; }
+}
+
+/* ================== 커스텀 제작 ================== */
+function makeCustomFromInputs(){
+  return {
+    id:'custom_'+Date.now(),
+    name: ($('#ct_name').value||'MyTheme').slice(0,24),
+    price:0,
+    vars:{
+      bubbleMe: $('#ct_me').value || '#0a84ff',
+      bubbleHim: $('#ct_him').value || '#2a2f3a',
+      header: $('#ct_header').value || '#0b0e13',
+      send: $('#ct_send').value || '#0a84ff',
+      radius: +($('#ct_radius').value||18),
+      font: $('#ct_font').value||''
+    }
+  };
+}
+$('#ct_apply').onclick=()=>{ const t=makeCustomFromInputs(); applyThemeVars(t.vars); toast('커스텀 미리보기 적용'); };
+$('#ct_save').onclick=()=>{
+  const t=makeCustomFromInputs();
+  state.themes.custom = state.themes.custom||[]; state.themes.custom.push(t); save(); toast('커스텀 테마 저장 완료'); 
+};
+$('#ct_ai').onclick=()=>{
+  const seed = hash($('#ct_prompt').value||'custom');
+  const r=prng(seed); const h=()=>('#'+[0,0,0].map(()=>('0'+Math.floor(r()*256).toString(16)).slice(-2)).join(''));
+  $('#ct_me').value=h(); $('#ct_him').value=h(); $('#ct_header').value=h(); $('#ct_send').value=h();
+  $('#ct_radius').value = 12+Math.floor(r()*14);
+  toast('프롬프트 기반 팔레트 제안 완료(로컬 난수)');
+};
+
+/* ================== 공유 (Export/Import) ================== */
+$('#doExport').onclick=()=>{
+  const data = { // 대화 로그 제외 기본
+    meName:state.meName, meAge:state.meAge, concepts:state.concepts,
+    bfName:state.bfName, bfAge:state.bfAge, traits:state.traits, tone:state.tone,
+    hobbies:state.hobbies, bio:state.bio,
+    styleHair:state.styleHair, styleVibe:state.styleVibe, height:state.height, build:state.build,
+    avatarData:state.avatarData||null,
+    memory:state.memory // 기억 포함
+  };
+  $('#exportBox')..value = JSON.stringify(data,null,2);
+};
+$('#copyExport').onclick=()=>{ $('#exportBox').select(); document.execCommand('copy'); toast('복사 완료'); };
+$('#doImport').onclick=()=>{
+  try{
+    const obj=JSON.parse($('#importBox').value||'{}');
+    Object.assign(state, obj);
+    if($('#importChat').checked && obj.chat) state.chat=obj.chat;
+    save(); buildChatHeader(); buildSummary(); toast('가져오기 완료');
+  }catch(e){ alert('JSON 형식 오류'); }
+};
+
+/* ================== 초기 UI 빌드 ================== */
+function initValues(){
+  ['meName','meAge','bfName','bfAge','hobbies','bio','styleHair','styleVibe','height','build','tone','prompt']
+  .forEach(id=>{ if(state[id]) $('#'+id).value = state[id]; });
+}
+initValues(); buildChatHeader(); buildSummary();
+if(state.chat && state.chat.length){ // 복원
+  msgsEl.innerHTML=''; for(const m of state.chat){ addMsg(m.text,m.who,m.ts); }
+} else { seedIntro(); }
+
+/* ================== 포인트용 토스트 ================== */
+let toastTimer=null;
+function toast(msg){
+  let t=document.getElementById('toast');
+  if(!t){ t=document.createElement('div'); t.id='toast'; Object.assign(t.style,{
+      position:'fixed',left:'50%',bottom:'22px',transform:'translateX(-50%)',
+      background:'rgba(0,0,0,.75)',color:'#fff',padding:'10px 14px',borderRadius:'10px',zIndex:9999
+  }); document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=> t.style.opacity='0', 1400);
+}
+
+/* ================== 테마 즉시 반영 (활성) ================== */
+setActiveTheme(state.themes.active||'base');
+
+/* ================== 이벤트: 입력 저장 + 진행도바 장식 ================== */
+['setup','image','chat','store','custom','share'].forEach((v,i)=>{$('[data-view="'+v+'"]')?.addEventListener('click',()=>setProgress(i*20));});
+
+/* ================== 빌드 끝 ================== */
 </script>
 </body>
 </html>
