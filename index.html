@@ -383,7 +383,7 @@ chips($('#traits'), traitsList, 'traits');
 ['meName','meAge','bfName','bfAge','hobbies','bio','styleHair','styleVibe','height','build','tone','prompt']
 .forEach(id=>{
   const el = $('#'+id);
-  if(state[id]) el.value = state[id];
+  if(el && state[id]) el.value = state[id];
   el && (el.oninput = e=>{ state[id]= e.target.value; save(); });
 });
 const setProgress = pct=> $('#bar').style.width=pct+'%';
@@ -516,7 +516,7 @@ function remember(text, who){
 }
 
 /* ================== 상점 & 테마 시스템 ================== */
-/* 10종 오마주 테마 (이름만 창작) */
+/* 10종 오마주 테마 */
 const THEMES = [
   {id:'base', name:'기본', price:0, vars:{bubbleMe:'#0a84ff',bubbleHim:'#2a2f3a',header:'#0b0e13',send:'#0a84ff',radius:18,font:''}},
   {id:'bluebubble',  name:'BlueBubble',  price:3500, vars:{bubbleMe:'#0a84ff',bubbleHim:'#3a3f4a',header:'#0b0e13',send:'#0a84ff',radius:18,font:''}},
@@ -637,15 +637,15 @@ $('#ct_ai').onclick=()=>{
 
 /* ================== 공유 (Export/Import) ================== */
 $('#doExport').onclick=()=>{
-  const data = { // 대화 로그 제외 기본
+  const data = {
     meName:state.meName, meAge:state.meAge, concepts:state.concepts,
     bfName:state.bfName, bfAge:state.bfAge, traits:state.traits, tone:state.tone,
     hobbies:state.hobbies, bio:state.bio,
     styleHair:state.styleHair, styleVibe:state.styleVibe, height:state.height, build:state.build,
     avatarData:state.avatarData||null,
-    memory:state.memory // 기억 포함
+    memory:state.memory
   };
-  $('#exportBox')..value = JSON.stringify(data,null,2);
+  $('#exportBox').value = JSON.stringify(data,null,2);
 };
 $('#copyExport').onclick=()=>{ $('#exportBox').select(); document.execCommand('copy'); toast('복사 완료'); };
 $('#doImport').onclick=()=>{
@@ -663,7 +663,7 @@ function initValues(){
   .forEach(id=>{ if(state[id]) $('#'+id).value = state[id]; });
 }
 initValues(); buildChatHeader(); buildSummary();
-if(state.chat && state.chat.length){ // 복원
+if(state.chat && state.chat.length){
   msgsEl.innerHTML=''; for(const m of state.chat){ addMsg(m.text,m.who,m.ts); }
 } else { seedIntro(); }
 
@@ -684,8 +684,6 @@ setActiveTheme(state.themes.active||'base');
 
 /* ================== 이벤트: 입력 저장 + 진행도바 장식 ================== */
 ['setup','image','chat','store','custom','share'].forEach((v,i)=>{$('[data-view="'+v+'"]')?.addEventListener('click',()=>setProgress(i*20));});
-
-/* ================== 빌드 끝 ================== */
 </script>
 </body>
 </html>
